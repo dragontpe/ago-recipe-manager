@@ -179,7 +179,6 @@ ago-recipe-manager/
 │   │   └── migrations.rs       # SQLite schema
 │   ├── capabilities/           # Tauri permissions
 │   └── Cargo.toml
-├── CODEX.md                    # Detailed technical handover document
 └── README.md
 ```
 
