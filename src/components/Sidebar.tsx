@@ -80,7 +80,7 @@ export function Sidebar() {
         </>
       )}
 
-      <div className="p-2 pt-1">
+      <div className="mt-auto p-2 space-y-1.5">
         <div className="rounded-lg border border-(--color-border) bg-(--color-surface) px-3 py-2">
           <div className="flex items-center gap-2">
             <span
@@ -103,6 +103,10 @@ export function Sidebar() {
           <p className="text-[11px] mt-1 text-(--color-text-tertiary) truncate">
             {currentSsid ? `Network: ${currentSsid}` : "No active WiFi network"}
           </p>
+        </div>
+        <div className="px-3 py-1.5 text-[10px] text-(--color-text-tertiary) leading-relaxed">
+          <p>v1.1.0 — Created by DragonTPE</p>
+          <p>MIT License — Not an official Vintage Visual product</p>
         </div>
       </div>
     </aside>
