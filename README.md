@@ -133,8 +133,8 @@ The app ships with a pre-loaded developer suggestion list (you can type any cust
 
 ## Roadmap
 
-- [ ] App icon
-- [ ] Massive Dev Chart integration (auto-lookup development times)
+- [x] App icon
+- [x] Massive Dev Chart integration (auto-lookup development times)
 - [ ] C-41 and E-6 recipe support
 - [ ] Recipe version history
 - [ ] Batch upload (multiple recipes at once)

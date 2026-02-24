@@ -25,6 +25,7 @@ export function Settings() {
         dilution: recipeData.dilution,
         category: recipeData.category,
         notes: "",
+        dev_time_reduced: 0,
         created_at: now,
         updated_at: now,
       });

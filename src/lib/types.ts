@@ -6,6 +6,7 @@ export interface Recipe {
   dilution: string;
   category: string;
   notes: string;
+  dev_time_reduced: number;
   created_at: string;
   updated_at: string;
   steps: Step[];
@@ -47,7 +48,19 @@ export interface AgoStepJson {
   logo_text: string;
 }
 
-export type ViewType = "recipes" | "connection" | "settings";
+export interface MdcEntry {
+  film: string;
+  developer: string;
+  dilution: string;
+  iso: string;
+  time_35mm: string;
+  time_120: string;
+  time_sheet: string;
+  temp_c: string;
+  notes: string;
+}
+
+export type ViewType = "recipes" | "massdev" | "connection" | "settings";
 
 export type AgitationType = "Roll" | "Stick" | "Stand" | "Off";
 export type CompensationType = "On" | "Mon" | "Off";

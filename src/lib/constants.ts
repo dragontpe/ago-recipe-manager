@@ -41,11 +41,14 @@ export function defaultStep(recipeId: string, sortOrder: number, name: string): 
   recipe_id: string;
 } {
   const isDev = name === "DEV";
+  const defaultTimes: Record<string, number> = {
+    DEV: 0, STOP: 1, FIX: 5, RINSE: 10,
+  };
   return {
     recipe_id: recipeId,
     sort_order: sortOrder,
     name,
-    time_min: isDev ? 0 : 5,
+    time_min: defaultTimes[name] ?? 5,
     time_sec: 0,
     agitation: "Roll",
     compensation: isDev ? "On" : "Off",

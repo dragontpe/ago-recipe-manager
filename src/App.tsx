@@ -4,6 +4,7 @@ import { Sidebar } from "./components/Sidebar";
 import { RecipeEditor } from "./components/RecipeEditor";
 import { AgoConnection } from "./components/AgoConnection";
 import { Settings } from "./components/Settings";
+import { MdcLookup } from "./components/MdcLookup";
 import { EmptyState } from "./components/EmptyState";
 import { Toast } from "./components/Toast";
 
@@ -55,6 +56,7 @@ function AppInner() {
             <EmptyState />
           )
         )}
+        {activeView === "massdev" && <MdcLookup />}
         {activeView === "connection" && <AgoConnection />}
         {activeView === "settings" && <Settings />}
       </main>

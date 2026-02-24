@@ -48,8 +48,8 @@ export async function fetchRecipeById(id: string): Promise<Recipe | null> {
 export async function insertRecipe(recipe: Omit<Recipe, "steps">): Promise<void> {
   const d = await getDb();
   await d.execute(
-    `INSERT INTO recipes (id, name, film_stock, developer, dilution, category, notes, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    `INSERT INTO recipes (id, name, film_stock, developer, dilution, category, notes, dev_time_reduced, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       recipe.id,
       recipe.name,
@@ -58,6 +58,7 @@ export async function insertRecipe(recipe: Omit<Recipe, "steps">): Promise<void>
       recipe.dilution,
       recipe.category,
       recipe.notes,
+      recipe.dev_time_reduced ?? 0,
       recipe.created_at,
       recipe.updated_at,
     ]
@@ -110,6 +111,7 @@ export async function duplicateRecipe(sourceId: string, newId: string): Promise<
     dilution: source.dilution,
     category: source.category,
     notes: source.notes,
+    dev_time_reduced: 0,
     created_at: now,
     updated_at: now,
   });

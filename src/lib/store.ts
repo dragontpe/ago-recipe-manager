@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Recipe, ViewType } from "./types";
+import type { Recipe, ViewType, MdcEntry } from "./types";
 import * as db from "./db";
 import { defaultStep, DEFAULT_TEMPLATE_STEPS, DEFAULT_SETTINGS } from "./constants";
 
@@ -29,6 +29,8 @@ interface AppState {
   ) => Promise<void>;
   deleteRecipe: (id: string) => Promise<void>;
   duplicateRecipe: (id: string) => Promise<void>;
+  applyMdcEntry: (recipeId: string, entry: MdcEntry) => Promise<void>;
+  reduceDevTime: (recipeId: string) => Promise<void>;
 
   // Steps
   addStep: (recipeId: string, stepName?: string) => Promise<void>;
@@ -93,6 +95,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         dilution: "",
         category: "BW",
         notes: "",
+        dev_time_reduced: 0,
         created_at: now,
         updated_at: now,
       });
@@ -185,6 +188,51 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().loadRecipes();
     set({ selectedRecipeId: newId });
     get().showToast("Recipe duplicated");
+  },
+
+  applyMdcEntry: async (recipeId, entry) => {
+    const { updateRecipeField, updateStepField, showToast, recipes } = get();
+
+    await updateRecipeField(recipeId, "film_stock", entry.film);
+    await updateRecipeField(recipeId, "developer", entry.developer);
+    await updateRecipeField(recipeId, "dilution", entry.dilution);
+
+    const recipe = recipes.find((r) => r.id === recipeId);
+    const devStep = recipe?.steps.find((s) => s.name === "DEV");
+    if (devStep && entry.time_35mm) {
+      const totalMin = parseFloat(entry.time_35mm);
+      if (!isNaN(totalMin)) {
+        const min = Math.floor(totalMin);
+        const sec = Math.round((totalMin - min) * 60);
+        await updateStepField(devStep.id, "time_min", min);
+        await updateStepField(devStep.id, "time_sec", sec);
+      }
+      const temp = parseInt(entry.temp_c);
+      if (!isNaN(temp)) {
+        await updateStepField(devStep.id, "rated_temperature", temp);
+      }
+    }
+
+    showToast("Dev times applied from Massive Dev Chart");
+  },
+
+  reduceDevTime: async (recipeId) => {
+    const { recipes, updateStepField, updateRecipeField, showToast } = get();
+    const recipe = recipes.find((r) => r.id === recipeId);
+    if (!recipe || recipe.dev_time_reduced) return;
+
+    const devStep = recipe.steps.find((s) => s.name === "DEV");
+    if (!devStep) return;
+
+    const totalSeconds = devStep.time_min * 60 + devStep.time_sec;
+    const reduced = Math.round(totalSeconds * 0.85);
+    const newMin = Math.floor(reduced / 60);
+    const newSec = reduced % 60;
+
+    await updateStepField(devStep.id, "time_min", newMin);
+    await updateStepField(devStep.id, "time_sec", newSec);
+    await updateRecipeField(recipeId, "dev_time_reduced", "1");
+    showToast(`Dev time reduced 15%: ${devStep.time_min}:${String(devStep.time_sec).padStart(2, "0")} → ${newMin}:${String(newSec).padStart(2, "0")}`);
   },
 
   // Steps

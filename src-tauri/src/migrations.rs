@@ -63,5 +63,13 @@ pub fn get_migrations() -> Vec<Migration> {
         "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "add dev_time_reduced flag to recipes",
+            sql: r#"
+            ALTER TABLE recipes ADD COLUMN dev_time_reduced INTEGER NOT NULL DEFAULT 0;
+        "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }

@@ -8,6 +8,26 @@ interface StepEditorProps {
   dragHandleProps: Record<string, unknown>;
 }
 
+function ReduceTimeButton({ recipe }: { recipe: Recipe }) {
+  const reduceDevTime = useAppStore((s) => s.reduceDevTime);
+  const already = !!recipe.dev_time_reduced;
+
+  return (
+    <button
+      onClick={() => reduceDevTime(recipe.id)}
+      disabled={already}
+      className={`mt-1 px-2.5 py-1 text-[11px] rounded-full transition-colors ${
+        already
+          ? "text-(--color-text-tertiary) border border-(--color-border)/50 cursor-not-allowed opacity-50"
+          : "text-(--color-accent) border border-(--color-accent)/40 hover:bg-(--color-accent)/10 cursor-pointer"
+      }`}
+      title={already ? "Time already reduced by 15%" : "Reduce dev time by 15%"}
+    >
+      {already ? "-15% applied" : "-15% dev time"}
+    </button>
+  );
+}
+
 export function StepEditor({ step, recipe, dragHandleProps }: StepEditorProps) {
   const updateStepField = useAppStore((s) => s.updateStepField);
   const deleteStep = useAppStore((s) => s.deleteStep);
@@ -109,6 +129,11 @@ export function StepEditor({ step, recipe, dragHandleProps }: StepEditorProps) {
               className="w-14 text-center font-mono tabular-nums text-3xl bg-transparent border-none outline-none text-(--color-text-primary)"
             />
           </div>
+          {isDev && (
+            <div className="flex justify-center">
+              <ReduceTimeButton recipe={recipe} />
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl border border-(--color-border) bg-(--color-surface-secondary) p-3">
