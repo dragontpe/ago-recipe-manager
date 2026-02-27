@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useAppStore } from "../lib/store";
+import { AgoPrograms } from "./AgoPrograms";
 
 function normalizeSsid(value: string): string {
   return value.replace(/^"+|"+$/g, "").trim().toLowerCase();
@@ -304,6 +305,9 @@ export function AgoConnection() {
           </div>
         )}
       </div>
+
+      {/* Programs on AGO */}
+      <AgoPrograms />
 
       {/* Manual instructions fallback */}
       <details className="mt-6">

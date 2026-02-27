@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::fs;
 use std::fs::OpenOptions;
@@ -5,6 +6,12 @@ use std::io::Write;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri_plugin_dialog::DialogExt;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgoProgram {
+    pub filename: String,
+    pub display_name: String,
+}
 
 const UPLOAD_DEBUG_LOG_PATH: &str = "/tmp/ago-recipe-manager-upload-debug.log";
 
@@ -413,6 +420,115 @@ pub async fn upload_recipe_file(
     debug_lines.push(format!("error={}", err));
     append_upload_debug(&debug_lines);
     Err(err)
+}
+
+#[tauri::command]
+pub async fn list_ago_programs(ip: String) -> Result<Vec<AgoProgram>, String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(8))
+        .build()
+        .map_err(|e| format!("HTTP client error: {}", e))?;
+
+    let url = format!("http://{}/api/files/programs/custom", ip);
+    let resp = client
+        .get(&url)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to reach AGO: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("AGO returned HTTP {}", resp.status()));
+    }
+
+    let body = response_text(resp).await;
+
+    // The AGO may return a JSON array of file objects or a directory listing.
+    // Try parsing as JSON array first.
+    if let Ok(items) = serde_json::from_str::<Vec<Value>>(&body) {
+        let programs: Vec<AgoProgram> = items
+            .into_iter()
+            .filter_map(|item| {
+                let filename = item
+                    .get("name")
+                    .or_else(|| item.get("filename"))
+                    .and_then(Value::as_str)?
+                    .to_string();
+                let display_name = item
+                    .get("display_name")
+                    .and_then(Value::as_str)
+                    .map(String::from);
+                Some(AgoProgram {
+                    filename: filename.clone(),
+                    display_name: display_name.unwrap_or_else(|| sanitize_name_from_filename(&filename)),
+                })
+            })
+            .collect();
+        return Ok(programs);
+    }
+
+    // Fallback: try parsing as a JSON object with a files/programs/items array
+    if let Ok(obj) = serde_json::from_str::<Value>(&body) {
+        let arr = obj
+            .get("files")
+            .or_else(|| obj.get("programs"))
+            .or_else(|| obj.get("items"))
+            .and_then(Value::as_array);
+        if let Some(items) = arr {
+            let programs: Vec<AgoProgram> = items
+                .iter()
+                .filter_map(|item| {
+                    let filename = item
+                        .get("name")
+                        .or_else(|| item.get("filename"))
+                        .and_then(Value::as_str)?
+                        .to_string();
+                    let display_name = item
+                        .get("display_name")
+                        .and_then(Value::as_str)
+                        .map(String::from);
+                    Some(AgoProgram {
+                        filename: filename.clone(),
+                        display_name: display_name.unwrap_or_else(|| sanitize_name_from_filename(&filename)),
+                    })
+                })
+                .collect();
+            return Ok(programs);
+        }
+    }
+
+    Err(format!(
+        "Could not parse AGO response as program list: {}",
+        body.chars().take(200).collect::<String>()
+    ))
+}
+
+#[tauri::command]
+pub async fn delete_ago_program(ip: String, filename: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(8))
+        .build()
+        .map_err(|e| format!("HTTP client error: {}", e))?;
+
+    let url = format!("http://{}/api/files/programs/custom/{}", ip, filename);
+
+    let resp = client
+        .delete(&url)
+        .header("Accept", "application/json")
+        .header("Origin", format!("http://{}", ip))
+        .send()
+        .await
+        .map_err(|e| format!("Failed to reach AGO: {}", e))?;
+
+    if resp.status().is_success() {
+        return Ok(format!("Deleted {}", filename));
+    }
+
+    Err(format!(
+        "AGO returned HTTP {} when deleting {}",
+        resp.status(),
+        filename
+    ))
 }
 
 #[tauri::command]
