@@ -1,4 +1,4 @@
-import { useEffect, Component, type ReactNode } from "react";
+import { useEffect, useState, useCallback, Component, type ReactNode } from "react";
 import { useAppStore } from "./lib/store";
 import { Sidebar } from "./components/Sidebar";
 import { RecipeEditor } from "./components/RecipeEditor";
@@ -7,6 +7,7 @@ import { Settings } from "./components/Settings";
 import { MdcLookup } from "./components/MdcLookup";
 import { EmptyState } from "./components/EmptyState";
 import { Toast } from "./components/Toast";
+import { SplashScreen } from "./components/SplashScreen";
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -66,8 +67,12 @@ function AppInner() {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const hideSplash = useCallback(() => setShowSplash(false), []);
+
   return (
     <ErrorBoundary>
+      {showSplash && <SplashScreen onComplete={hideSplash} />}
       <AppInner />
     </ErrorBoundary>
   );
