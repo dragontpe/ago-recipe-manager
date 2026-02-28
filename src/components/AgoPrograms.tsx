@@ -41,13 +41,13 @@ export function AgoPrograms() {
     }
   };
 
-  if (uploads.length === 0) return null;
-
   return (
     <div className="bg-(--color-surface-secondary) border border-(--color-border) rounded-xl p-5">
       <h3 className="text-lg font-medium mb-3">Uploaded Programs</h3>
       <p className="text-sm text-(--color-text-tertiary) mb-3">
-        Programs you've uploaded to the AGO from this app.
+        {uploads.length === 0
+          ? "Programs you upload to the AGO will appear here. You can then delete them from the AGO directly."
+          : "Programs you've uploaded to the AGO from this app."}
       </p>
       <div className="space-y-1.5">
         {uploads.map((upload) => (
