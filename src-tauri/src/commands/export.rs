@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+use std::collections::BTreeSet;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -11,6 +12,13 @@ use tauri_plugin_dialog::DialogExt;
 pub struct UploadResult {
     pub message: String,
     pub ago_filename: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgoProgram {
+    pub filename: String,
+    pub name: String,
+    pub expanded_title: String,
 }
 
 const UPLOAD_DEBUG_LOG_PATH: &str = "/tmp/ago-recipe-manager-upload-debug.log";
@@ -87,6 +95,86 @@ fn sanitize_name_from_filename(filename: &str) -> String {
     } else {
         cleaned
     }
+}
+
+fn is_custom_program_filename(candidate: &str) -> bool {
+    let name = candidate
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .rsplit('/')
+        .next()
+        .unwrap_or_default();
+    name.starts_with("_P_C") && name.ends_with(".txt")
+}
+
+fn normalize_custom_program_filename(candidate: &str) -> Option<String> {
+    let name = candidate
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .rsplit('/')
+        .next()
+        .unwrap_or_default()
+        .to_string();
+    if is_custom_program_filename(&name) {
+        Some(name)
+    } else {
+        None
+    }
+}
+
+fn collect_custom_filenames_from_json(value: &Value, out: &mut BTreeSet<String>) {
+    match value {
+        Value::String(s) => {
+            if let Some(name) = normalize_custom_program_filename(s) {
+                out.insert(name);
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                collect_custom_filenames_from_json(item, out);
+            }
+        }
+        Value::Object(map) => {
+            for (key, inner) in map {
+                if let Some(name) = normalize_custom_program_filename(key) {
+                    out.insert(name);
+                }
+                collect_custom_filenames_from_json(inner, out);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn collect_custom_filenames_from_text(text: &str) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    let bytes = text.as_bytes();
+    let mut i = 0;
+
+    while i + 4 <= bytes.len() {
+        if &bytes[i..i + 4] == b"_P_C" {
+            let mut j = i + 4;
+            while j < bytes.len() {
+                let c = bytes[j] as char;
+                if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
+                    j += 1;
+                } else {
+                    break;
+                }
+            }
+            let candidate = &text[i..j];
+            if let Some(name) = normalize_custom_program_filename(candidate) {
+                out.insert(name);
+            }
+            i = j;
+            continue;
+        }
+        i += 1;
+    }
+
+    out
 }
 
 fn short_upload_token() -> String {
@@ -448,6 +536,90 @@ pub async fn delete_ago_program(ip: String, filename: String) -> Result<String, 
         resp.status(),
         filename
     ))
+}
+
+#[tauri::command]
+pub async fn list_ago_programs(ip: String) -> Result<Vec<AgoProgram>, String> {
+    let client = reqwest::Client::builder()
+        .cookie_store(true)
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("HTTP client error: {}", e))?;
+
+    let mut filenames = BTreeSet::new();
+    let discovery_urls = [
+        format!("http://{}/api/files/programs/custom", ip),
+        format!("http://{}/programs", ip),
+    ];
+
+    for url in discovery_urls {
+        let response = client
+            .get(&url)
+            .header("Accept", "application/json, text/plain, */*")
+            .send()
+            .await;
+
+        let Ok(resp) = response else {
+            continue;
+        };
+        if !resp.status().is_success() {
+            continue;
+        }
+
+        let body = response_text(resp).await;
+        if let Ok(parsed) = serde_json::from_str::<Value>(&body) {
+            collect_custom_filenames_from_json(&parsed, &mut filenames);
+        }
+        filenames.extend(collect_custom_filenames_from_text(&body));
+    }
+
+    if filenames.is_empty() {
+        return Err("Could not discover custom programs on AGO".to_string());
+    }
+
+    let mut programs = Vec::new();
+    for filename in filenames {
+        let file_url = format!("http://{}/api/files/programs/custom/{}", ip, filename);
+        let response = client
+            .get(&file_url)
+            .header("Accept", "application/json, text/plain, */*")
+            .send()
+            .await;
+
+        let Ok(resp) = response else {
+            continue;
+        };
+        if !resp.status().is_success() {
+            continue;
+        }
+
+        let body = response_text(resp).await;
+        let parsed = serde_json::from_str::<Value>(&body).unwrap_or(Value::Null);
+        let mut name = to_string_field(&parsed, "name");
+        if name.is_empty() {
+            name = sanitize_name_from_filename(&filename);
+        }
+        let expanded_title = to_string_field(&parsed, "expanded_title");
+
+        programs.push(AgoProgram {
+            filename,
+            name,
+            expanded_title,
+        });
+    }
+
+    programs.sort_by(|a, b| {
+        a.name
+            .to_lowercase()
+            .cmp(&b.name.to_lowercase())
+            .then_with(|| a.filename.cmp(&b.filename))
+    });
+
+    if programs.is_empty() {
+        return Err("Could not read custom program contents from AGO".to_string());
+    }
+
+    Ok(programs)
 }
 
 #[tauri::command]

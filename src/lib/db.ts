@@ -260,3 +260,8 @@ export async function deleteAgoUpload(id: string): Promise<void> {
   const d = await getDb();
   await d.execute("DELETE FROM ago_uploads WHERE id = $1", [id]);
 }
+
+export async function deleteAgoUploadsByFilename(filename: string): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM ago_uploads WHERE filename = $1", [filename]);
+}

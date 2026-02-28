@@ -35,6 +35,7 @@ pub fn run() {
             commands::export::import_recipe_file,
             commands::export::upload_recipe_file,
             commands::export::delete_ago_program,
+            commands::export::list_ago_programs,
             commands::export::get_upload_debug_log,
             commands::export::clear_upload_debug_log,
         ])

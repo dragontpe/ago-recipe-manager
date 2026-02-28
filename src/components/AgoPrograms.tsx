@@ -1,23 +1,111 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../lib/store";
-import { fetchAgoUploads, deleteAgoUpload, type AgoUpload } from "../lib/db";
+import {
+  fetchAgoUploads,
+  deleteAgoUpload,
+  deleteAgoUploadsByFilename,
+  type AgoUpload,
+} from "../lib/db";
+
+interface AgoDeviceProgram {
+  filename: string;
+  name: string;
+  expandedTitle?: string;
+  expanded_title?: string;
+}
+
+interface AgoProgramRow extends AgoUpload {
+  local_id?: string;
+}
+
+function formatProgramDisplayName(program: AgoDeviceProgram, fallback: string): string {
+  const base = (program.name || "").trim();
+  const expanded = (program.expandedTitle ?? program.expanded_title ?? "").trim();
+
+  if (base && expanded) {
+    if (expanded.startsWith("-")) {
+      return `${base} ${expanded.slice(1).trim()}`.trim();
+    }
+    return `${base} ${expanded}`.trim();
+  }
+
+  return base || fallback;
+}
 
 export function AgoPrograms() {
   const settings = useAppStore((s) => s.settings);
   const wifiStatus = useAppStore((s) => s.wifiStatus);
   const showToast = useAppStore((s) => s.showToast);
-  const [uploads, setUploads] = useState<AgoUpload[]>([]);
+  const [uploads, setUploads] = useState<AgoProgramRow[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [deviceListError, setDeviceListError] = useState<string | null>(null);
 
   const ip = settings.ago_ip || "10.10.10.1";
 
   useEffect(() => {
-    fetchAgoUploads().then(setUploads).catch(() => {});
-  }, []);
+    let cancelled = false;
 
-  const handleDelete = async (upload: AgoUpload) => {
+    async function loadPrograms() {
+      setLoading(true);
+      setDeviceListError(null);
+
+      try {
+        const localUploads = await fetchAgoUploads();
+
+        if (wifiStatus === "connected") {
+          try {
+            const devicePrograms = await invoke<AgoDeviceProgram[]>("list_ago_programs", { ip });
+            if (cancelled) return;
+
+            const localByFilename = new Map(localUploads.map((u) => [u.filename, u]));
+            const rows: AgoProgramRow[] = devicePrograms.map((program) => {
+              const local = localByFilename.get(program.filename);
+              return {
+                id: program.filename,
+                recipe_id: local?.recipe_id ?? null,
+                filename: program.filename,
+                display_name: formatProgramDisplayName(
+                  program,
+                  local?.display_name || program.filename
+                ),
+                uploaded_at: local?.uploaded_at ?? "",
+                local_id: local?.id,
+              };
+            });
+
+            setUploads(rows);
+            return;
+          } catch (e) {
+            if (cancelled) return;
+            setDeviceListError(String(e));
+          }
+        }
+
+        if (!cancelled) {
+          setUploads(localUploads.map((u) => ({ ...u, local_id: u.id })));
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setUploads([]);
+          setDeviceListError(String(e));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPrograms();
+    return () => {
+      cancelled = true;
+    };
+  }, [ip, wifiStatus]);
+
+  const handleDelete = async (upload: AgoProgramRow) => {
     setDeleting(upload.id);
     try {
       if (wifiStatus === "connected") {
@@ -25,14 +113,16 @@ export function AgoPrograms() {
           ip,
           filename: upload.filename,
         });
+        await deleteAgoUploadsByFilename(upload.filename);
+        setUploads((prev) => prev.filter((u) => u.id !== upload.id));
+        showToast("Program deleted from AGO");
+      } else {
+        if (upload.local_id) {
+          await deleteAgoUpload(upload.local_id);
+        }
+        setUploads((prev) => prev.filter((u) => u.id !== upload.id));
+        showToast("Removed from local list");
       }
-      await deleteAgoUpload(upload.id);
-      setUploads((prev) => prev.filter((u) => u.id !== upload.id));
-      showToast(
-        wifiStatus === "connected"
-          ? "Program deleted from AGO"
-          : "Removed from list (AGO not connected — delete from device next time)"
-      );
     } catch (e) {
       showToast(`Delete failed: ${e}`, "error");
     } finally {
@@ -45,11 +135,19 @@ export function AgoPrograms() {
     <div className="bg-(--color-surface-secondary) border border-(--color-border) rounded-xl p-5">
       <h3 className="text-lg font-medium mb-3">Uploaded Programs</h3>
       <p className="text-sm text-(--color-text-tertiary) mb-3">
-        {uploads.length === 0
-          ? "Programs you upload to the AGO will appear here. You can then delete them from the AGO directly."
-          : "Programs you've uploaded to the AGO from this app."}
+        {wifiStatus === "connected"
+          ? "All custom programs currently on the AGO device."
+          : "Offline view: recent programs uploaded from this app."}
       </p>
+      {deviceListError && wifiStatus === "connected" && (
+        <p className="text-xs text-(--color-text-tertiary) mb-3">
+          Could not read full AGO list, showing local records only.
+        </p>
+      )}
       <div className="space-y-1.5">
+        {loading && uploads.length === 0 && (
+          <p className="text-sm text-(--color-text-tertiary)">Loading programs...</p>
+        )}
         {uploads.map((upload) => (
           <div
             key={upload.id}
@@ -61,9 +159,13 @@ export function AgoPrograms() {
               </p>
               <p className="text-xs text-(--color-text-tertiary) font-mono truncate">
                 {upload.filename}
-                <span className="ml-2 font-sans">
-                  {new Date(upload.uploaded_at).toLocaleDateString()}
-                </span>
+                {upload.uploaded_at ? (
+                  <span className="ml-2 font-sans">
+                    {new Date(upload.uploaded_at).toLocaleDateString()}
+                  </span>
+                ) : (
+                  <span className="ml-2 font-sans">On device</span>
+                )}
               </p>
             </div>
 
