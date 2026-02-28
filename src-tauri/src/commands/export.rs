@@ -8,12 +8,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri_plugin_dialog::DialogExt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgoProgram {
-    pub filename: String,
-    pub display_name: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UploadResult {
     pub message: String,
     pub ago_filename: String,
