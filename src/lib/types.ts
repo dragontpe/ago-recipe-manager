@@ -60,7 +60,7 @@ export interface MdcEntry {
   notes: string;
 }
 
-export type ViewType = "recipes" | "massdev" | "connection" | "settings";
+export type ViewType = "recipes" | "massdev" | "connection" | "uploads" | "settings";
 
 export type AgitationType = "Roll" | "Stick" | "Stand" | "Off";
 export type CompensationType = "On" | "Mon" | "Off";

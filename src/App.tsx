@@ -3,6 +3,7 @@ import { useAppStore } from "./lib/store";
 import { Sidebar } from "./components/Sidebar";
 import { RecipeEditor } from "./components/RecipeEditor";
 import { AgoConnection } from "./components/AgoConnection";
+import { AgoPrograms } from "./components/AgoPrograms";
 import { Settings } from "./components/Settings";
 import { MdcLookup } from "./components/MdcLookup";
 import { EmptyState } from "./components/EmptyState";
@@ -59,6 +60,12 @@ function AppInner() {
         )}
         {activeView === "massdev" && <MdcLookup />}
         {activeView === "connection" && <AgoConnection />}
+        {activeView === "uploads" && (
+          <div className="max-w-xl mx-auto p-6">
+            <h2 className="text-2xl font-semibold mb-6">Uploaded Programs</h2>
+            <AgoPrograms />
+          </div>
+        )}
         {activeView === "settings" && <Settings />}
       </main>
       <Toast />
