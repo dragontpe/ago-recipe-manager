@@ -5,6 +5,7 @@ import { recipeToAgoJson, generateAgoFilename } from "../lib/ago-format";
 import { invoke } from "@tauri-apps/api/core";
 import type { Recipe } from "../lib/types";
 import { DEVELOPERS } from "../lib/constants";
+import { insertAgoUpload } from "../lib/db";
 
 export function RecipeEditor({ recipe }: { recipe: Recipe }) {
   const updateRecipeField = useAppStore((s) => s.updateRecipeField);
@@ -44,7 +45,7 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
 
     try {
       const agoJson = recipeToAgoJson(recipe);
-      await invoke<string>("upload_recipe_file", {
+      const result = await invoke<{ message: string; ago_filename: string }>("upload_recipe_file", {
         ip,
         endpoint,
         fieldName,
@@ -53,6 +54,13 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
         filmStock: recipe.film_stock,
         developer: recipe.developer,
         dilution: recipe.dilution,
+      });
+      await insertAgoUpload({
+        id: crypto.randomUUID(),
+        recipe_id: recipe.id,
+        filename: result.ago_filename,
+        display_name: recipe.name || recipe.film_stock || "Custom Program",
+        uploaded_at: new Date().toISOString(),
       });
       showToast("Recipe uploaded to AGO");
     } catch (e) {

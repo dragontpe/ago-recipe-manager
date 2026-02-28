@@ -229,3 +229,34 @@ export async function upsertSetting(key: string, value: string): Promise<void> {
     [key, value]
   );
 }
+
+// AGO Uploads
+
+export interface AgoUpload {
+  id: string;
+  recipe_id: string | null;
+  filename: string;
+  display_name: string;
+  uploaded_at: string;
+}
+
+export async function fetchAgoUploads(): Promise<AgoUpload[]> {
+  const d = await getDb();
+  return d.select<AgoUpload[]>(
+    "SELECT * FROM ago_uploads ORDER BY uploaded_at DESC"
+  );
+}
+
+export async function insertAgoUpload(upload: AgoUpload): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `INSERT INTO ago_uploads (id, recipe_id, filename, display_name, uploaded_at)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [upload.id, upload.recipe_id, upload.filename, upload.display_name, upload.uploaded_at]
+  );
+}
+
+export async function deleteAgoUpload(id: string): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM ago_uploads WHERE id = $1", [id]);
+}

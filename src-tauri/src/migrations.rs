@@ -71,5 +71,19 @@ pub fn get_migrations() -> Vec<Migration> {
         "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 4,
+            description: "track programs uploaded to AGO",
+            sql: r#"
+            CREATE TABLE IF NOT EXISTS ago_uploads (
+                id              TEXT PRIMARY KEY,
+                recipe_id       TEXT REFERENCES recipes(id) ON DELETE SET NULL,
+                filename        TEXT NOT NULL,
+                display_name    TEXT NOT NULL,
+                uploaded_at     TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+        "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
