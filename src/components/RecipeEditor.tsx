@@ -45,7 +45,7 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
 
     try {
       const agoJson = recipeToAgoJson(recipe);
-      const result = await invoke<{ message: string; ago_filename: string }>("upload_recipe_file", {
+      const result = await invoke<{ message: string; agoFilename?: string; ago_filename?: string }>("upload_recipe_file", {
         ip,
         endpoint,
         fieldName,
@@ -55,10 +55,11 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
         developer: recipe.developer,
         dilution: recipe.dilution,
       });
+      const uploadedFilename = result.agoFilename ?? result.ago_filename ?? filename;
       await insertAgoUpload({
         id: crypto.randomUUID(),
         recipe_id: recipe.id,
-        filename: result.ago_filename,
+        filename: uploadedFilename,
         display_name: recipe.name || recipe.film_stock || "Custom Program",
         uploaded_at: new Date().toISOString(),
       });
