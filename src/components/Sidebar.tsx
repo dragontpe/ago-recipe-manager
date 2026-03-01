@@ -26,7 +26,10 @@ export function Sidebar() {
           <p className="text-xs uppercase tracking-[0.12em] text-(--color-text-tertiary)">
             AGO
           </p>
-          <p className="text-sm font-semibold mt-0.5 text-(--color-text-primary)">
+          <p
+            className="text-base mt-0.5 text-(--color-text-primary)"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             Recipe Manager
           </p>
         </div>

@@ -87,32 +87,42 @@ export function RecipeList() {
 
       {/* Recipe list */}
       <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-        {sortedFiltered.map((recipe) => (
-          <button
-            key={recipe.id}
-            onClick={() => selectRecipe(recipe.id)}
-            className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-              selectedRecipeId === recipe.id
-                ? "bg-(--color-accent) text-white"
-                : "hover:bg-(--color-surface-hover)"
-            }`}
-          >
-            <div className="text-sm font-medium truncate">
-              {recipe.name || "Untitled"}
-            </div>
-            <div
-              className={`text-xs truncate ${
-                selectedRecipeId === recipe.id
-                  ? "text-white/70"
-                  : "text-(--color-text-secondary)"
+        {sortedFiltered.map((recipe) => {
+          const isSelected = selectedRecipeId === recipe.id;
+          const pills = [recipe.film_stock, recipe.developer].filter(Boolean);
+          return (
+            <button
+              key={recipe.id}
+              onClick={() => selectRecipe(recipe.id)}
+              className={`w-full text-left px-3 py-2 rounded-md transition-all ${
+                isSelected
+                  ? "border-l-3 border-l-(--color-accent) shadow-sm bg-(--color-surface-hover)"
+                  : "hover:shadow-sm hover:-translate-y-0.5"
               }`}
             >
-              {[recipe.film_stock, recipe.developer, recipe.dilution]
-                .filter(Boolean)
-                .join(" - ") || "No details"}
-            </div>
-          </button>
-        ))}
+              <div className={`text-sm font-medium truncate ${isSelected ? "text-(--color-accent)" : ""}`}>
+                {recipe.name || "Untitled"}
+              </div>
+              {pills.length > 0 && (
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {pills.map((pill) => (
+                    <span
+                      key={pill}
+                      className="inline-block px-1.5 py-0.5 text-[10px] rounded-full bg-(--color-surface) border border-(--color-border) text-(--color-text-tertiary) truncate max-w-[100px]"
+                    >
+                      {pill}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {pills.length === 0 && (
+                <div className="text-xs truncate text-(--color-text-tertiary) mt-0.5">
+                  No details
+                </div>
+              )}
+            </button>
+          );
+        })}
         {sortedFiltered.length === 0 && recipes.length > 0 && (
           <p className="text-xs text-(--color-text-tertiary) text-center py-4">
             No matching recipes

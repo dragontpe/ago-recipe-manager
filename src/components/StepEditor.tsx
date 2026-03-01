@@ -2,6 +2,20 @@ import { useAppStore } from "../lib/store";
 import type { Recipe, Step } from "../lib/types";
 import { AGITATION_OPTIONS, COMPENSATION_OPTIONS } from "../lib/constants";
 
+const STEP_COLORS: Record<string, string> = {
+  DEV: "var(--color-step-dev)",
+  STOP: "var(--color-step-stop)",
+  FIX: "var(--color-step-fix)",
+  RINSE: "var(--color-step-rinse)",
+  WASH: "var(--color-step-wash)",
+  PRE: "var(--color-step-pre)",
+  BLIX: "var(--color-step-blix)",
+};
+
+function getStepColor(name: string): string {
+  return STEP_COLORS[name] || "var(--color-text-secondary)";
+}
+
 interface StepEditorProps {
   step: Step;
   recipe: Recipe;
@@ -34,13 +48,16 @@ export function StepEditor({ step, recipe, dragHandleProps }: StepEditorProps) {
 
   const isDev = step.name === "DEV";
   const isTempControlled = step.compensation !== "Off";
+  const stepColor = getStepColor(step.name);
 
   return (
-    <div className={`rounded-2xl border p-3 transition-colors ${
-      isDev
-        ? "bg-(--color-accent)/8 border-(--color-accent)/35"
-        : "bg-(--color-surface) border-(--color-border)"
-    }`}>
+    <div
+      className="rounded-2xl border p-3 transition-colors shadow-sm"
+      style={{
+        backgroundColor: `color-mix(in srgb, ${stepColor} 8%, var(--color-surface))`,
+        borderColor: `color-mix(in srgb, ${stepColor} 25%, var(--color-border))`,
+      }}
+    >
       <div className="flex items-center gap-2 mb-2">
         <button
           {...dragHandleProps}
@@ -52,11 +69,18 @@ export function StepEditor({ step, recipe, dragHandleProps }: StepEditorProps) {
           </svg>
         </button>
 
-        <span className={`px-3 py-1.5 text-xs font-semibold rounded-full border ${
-          isDev
-            ? "bg-(--color-accent)/20 text-(--color-accent) border-(--color-accent)/40"
-            : "bg-(--color-surface-secondary) text-(--color-text-secondary) border-(--color-border)"
-        }`}>
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${stepColor} 20%, var(--color-surface))`,
+            borderColor: `color-mix(in srgb, ${stepColor} 35%, var(--color-border))`,
+            color: stepColor,
+          }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: stepColor }}
+          />
           {step.name}
         </span>
 
