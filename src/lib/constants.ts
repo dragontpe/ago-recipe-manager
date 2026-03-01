@@ -61,3 +61,21 @@ export function defaultStep(recipeId: string, sortOrder: number, name: string): 
 }
 
 export const DEFAULT_TEMPLATE_STEPS = ["DEV", "STOP", "FIX", "RINSE"];
+
+export const REEL_TYPES = ["35mm", "4x5", "5x7", "paper"] as const;
+export type ReelType = (typeof REEL_TYPES)[number];
+
+export const REEL_LABELS: Record<ReelType, string> = {
+  "35mm": "110 / 35mm / 120",
+  "4x5": "4x5 / 9x12",
+  "5x7": "5x7",
+  paper: "Paper 5",
+};
+
+export const TANK_VOLUMES: { tank: string; volumes: Partial<Record<ReelType, number>> }[] = [
+  { tank: "35mm tank", volumes: { "35mm": 250 } },
+  { tank: "Universal tank", volumes: { "35mm": 350 } },
+  { tank: "Multi-reel 3", volumes: { "35mm": 450, "4x5": 350 } },
+  { tank: "Multi-reel 5", volumes: { "35mm": 650, "4x5": 500, "5x7": 350, paper: 250 } },
+  { tank: "Multi-reel 8", volumes: { "35mm": 950, "4x5": 750, "5x7": 500, paper: 400 } },
+];

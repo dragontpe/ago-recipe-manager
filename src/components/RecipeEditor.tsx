@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Recipe } from "../lib/types";
 import { DEVELOPERS } from "../lib/constants";
 import { insertAgoUpload } from "../lib/db";
+import { ChemistryCalculator } from "./ChemistryCalculator";
 
 export function RecipeEditor({ recipe }: { recipe: Recipe }) {
   const updateRecipeField = useAppStore((s) => s.updateRecipeField);
@@ -71,7 +72,7 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-4">
-      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-6">
+      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-6 shadow-sm">
         <p className="text-[11px] uppercase tracking-[0.16em] text-(--color-text-tertiary) mb-2">
           Customize AGO Program
         </p>
@@ -81,7 +82,8 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
           onChange={(e) =>
             updateRecipeField(recipe.id, "name", e.target.value)
           }
-          className="text-4xl leading-tight font-semibold bg-transparent border-none outline-none w-full text-(--color-text-primary) placeholder:(--color-text-tertiary)"
+          style={{ fontFamily: "var(--font-display)" }}
+          className="text-4xl leading-tight bg-transparent border-none outline-none w-full text-(--color-text-primary) placeholder:(--color-text-tertiary)"
           placeholder="Recipe Name"
         />
         {recipeMetaSummary && (
@@ -91,7 +93,7 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
         )}
       </section>
 
-      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-3">
+      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-3 shadow-sm">
         <div className="flex flex-wrap gap-2 items-center">
           <button
             onClick={handleUpload}
@@ -139,7 +141,7 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-5 space-y-4">
+      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-5 space-y-4 shadow-sm">
         <h3 className="text-sm font-semibold text-(--color-text-secondary) uppercase tracking-[0.08em]">
           Recipe Details
         </h3>
@@ -209,7 +211,9 @@ export function RecipeEditor({ recipe }: { recipe: Recipe }) {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-5">
+      <ChemistryCalculator dilution={recipe.dilution} />
+
+      <section className="rounded-3xl border border-(--color-border) bg-(--color-surface-secondary) p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-(--color-text-secondary) mb-3 uppercase tracking-[0.08em]">
           Processing Steps
         </h3>
